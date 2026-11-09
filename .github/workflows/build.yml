@@ -8,7 +8,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
       
-      - name: Install Cross-Compiler
+      - name: Install Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-aarch64-linux-gnu build-essential
@@ -22,13 +22,11 @@ jobs:
           # আপনার ফাইলটি কপি করা হচ্ছে
           cp my_kpm.c KernelPatch/kpms/demo-hello/hello.c
           
-          # demo-hello ফোল্ডারে গিয়ে কম্পাইল করা হচ্ছে
+          # কম্পাইল করা হচ্ছে
           cd KernelPatch/kpms/demo-hello
-          
-          # TARGET_COMPILE এরর দূর করার জন্য ম্যানুয়ালি কম্পাইল
           make TARGET_COMPILE=aarch64-linux-gnu- ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-
           
-      - name: Upload KPM File
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Compiled-KPM
