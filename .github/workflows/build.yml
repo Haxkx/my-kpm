@@ -8,36 +8,30 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
       
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential cmake python3
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r25c
           
       - name: Clone KernelPatch
         run: |
           git clone https://github.com/bmax121/KernelPatch.git
           
-      - name: Build kptools
+      - name: Compile KPM
         run: |
-          cd KernelPatch/tools
+          export NDK=${{ steps.setup-ndk.outputs.ndk-path }}
+          export TOOLCHAIN=$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin
+          export CC=$TOOLCHAIN/aarch64-linux-android31-clang
           
-          # ম্যানুয়ালি preset.h তৈরি করা হচ্ছে (EXTRA_ALIGN সহ)
-          cat << 'EOF' > preset.h
-          #ifndef PRESET_H
-          #define PRESET_H
-          #define PRESET_VERSION "0.0.0"
-          #define PRESET_KP_VERSION "0.11.0"
-          #define EXTRA_ALIGN 8
-          #endif
-          EOF
+          # kpatch.h ফাইলটি খোঁজার জন্য ইনক্লুড পাথ
+          INCLUDE_PATH="-I./KernelPatch/kernel/include -I./KernelPatch/kernel/patch/include"
           
-          # এখন tools ফোল্ডার বিল্ড করা হচ্ছে
-          make
+          # সরাসরি clang দিয়ে কম্পাইল করা হচ্ছে (Makefile ছাড়া)
+          $CC -c -O2 -fno-pic -fno-PIE -fno-stack-protector -fno-asynchronous-unwind-tables -fno-unwind-tables -fno-exceptions -nostdinc -I$NDK/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include $INCLUDE_PATH -o my-kpm.o my-kpm.c
           
-      - name: Compile KPM with kptools
-        run: |
-          # kptools ব্যবহার করে আপনার ফাইল কম্পাইল করা হচ্ছে
-          ./KernelPatch/tools/kptools kpm -i my-kpm.c -o my-kpm.kpm
+          # অবজেক্ট ফাইল থেকে কে.পি.এম (KPM) ফাইল তৈরি করা হচ্ছে
+          $TOOLCHAIN/llvm-objcopy -O binary my-kpm.o my-kpm.kpm
           
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
