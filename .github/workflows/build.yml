@@ -17,17 +17,28 @@ jobs:
         run: |
           git clone --depth=1 https://github.com/bmax121/KernelPatch.git
 
+      - name: Download Kernel Headers
+        run: |
+          # কার্নেল হেডার ফাইলগুলো ডাউনলোড করা হচ্ছে (module.h পাওয়ার জন্য)
+          git clone --depth=1 --branch v6.1 https://github.com/torvalds/linux.git linux-kernel
+          
+          # আর্কিটেকচার ফাইলগুলো জেনারেট বা কপি করা হচ্ছে
+          cd linux-kernel
+          make ARCH=arm64 defconfig
+          # কিছু হেডার ফাইল সঠিক জায়গায় সিমলিংক করা হচ্ছে
+          ln -s arch/arm64/include/asm include/asm || true
+
       - name: Compile KPM Module
         run: |
-          # সরাসরি aarch64-linux-gnu-gcc দিয়ে কম্পাইল করা হচ্ছে
-          # -nostdinc ব্যবহার করা হচ্ছে যাতে সিস্টেমের ডিফল্ট হেডার ইনক্লুড না হয়
+          # সরাসরি gcc দিয়ে কম্পাইল করা হচ্ছে, কার্নেল হেডারের পাথ বলে দেওয়া হচ্ছে
           aarch64-linux-gnu-gcc -c -O2 -fno-pic -fno-PIE -fno-stack-protector \
           -fno-asynchronous-unwind-tables -fno-unwind-tables -fno-exceptions \
           -nostdinc \
+          -I./linux-kernel/include \
+          -I./linux-kernel/arch/arm64/include \
+          -I./linux-kernel/arch/arm64/include/generated \
           -I./KernelPatch/kernel/include \
           -I./KernelPatch/kernel/patch/include \
-          -I./KernelPatch/kernel/linux/include \
-          -I./KernelPatch/kernel/linux/arch/arm64/include \
           -T./KernelPatch/kpms/demo-hello/hello.lds \
           -o hello.kpm my-kpm.c
 
