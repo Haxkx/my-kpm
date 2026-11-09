@@ -11,20 +11,37 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu build-essential
+          sudo apt-get install -y gcc-aarch64-linux-gnu build-essential bc bison flex libssl-dev
           
       - name: Clone KernelPatch
         run: |
           git clone https://github.com/bmax121/KernelPatch.git
           
+      - name: Download Linux Kernel Headers
+        run: |
+          # কার্নেল হেডার ডাউনলোড করা হচ্ছে (এটি ছাড়া module.h পাওয়া যাবে না)
+          git clone --depth=1 https://github.com/torvalds/linux.git linux-headers
+          
       - name: Compile KPM
         run: |
-          # এখানে আপনার ফাইলের সঠিক নামটি দিলাম (my-kpm.c)
+          # আপনার ফাইলটি কপি করা হচ্ছে (নিশ্চিত করুন আপনার ফাইলের নাম my-kpm.c)
           cp my-kpm.c KernelPatch/kpms/demo-hello/hello.c
           
-          # কম্পাইল করা হচ্ছে
           cd KernelPatch/kpms/demo-hello
-          make TARGET_COMPILE=aarch64-linux-gnu- ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-
+          
+          # ম্যানুয়ালি কম্পাইল করা হচ্ছে, কার্নেল হেডারের পাথ বলে দেওয়া হচ্ছে
+          aarch64-linux-gnu-gcc -c -O2 -nostdinc \
+          -fno-pic -fno-PIE -fno-stack-protector \
+          -fno-asynchronous-unwind-tables -fno-unwind-tables -fno-exceptions \
+          -I../../../linux-headers/arch/arm64/include \
+          -I../../../linux-headers/arch/arm64/include/generated \
+          -I../../../linux-headers/include \
+          -I../../../linux-headers/arch/arm64/include/uapi \
+          -I../../../linux-headers/include/uapi \
+          -I../../../KernelPatch/kernel/include \
+          -I../../../KernelPatch/kernel/patch/include \
+          -T hello.lds \
+          -o hello.kpm hello.c
           
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
