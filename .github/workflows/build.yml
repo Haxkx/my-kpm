@@ -21,17 +21,15 @@ jobs:
         run: |
           cd KernelPatch/tools
           
-          # preset.h তৈরি করার স্ক্রিপ্ট রান করা হচ্ছে
-          python3 gen_headers.py || true 
-          
-          # যদি স্ক্রিপ্ট না থাকে, তবে ম্যানুয়ালি preset.h তৈরি করা হচ্ছে
-          if [ ! -f preset.h ]; then
-            echo '#ifndef PRESET_H' > preset.h
-            echo '#define PRESET_H' >> preset.h
-            echo '#define PRESET_VERSION "0.0.0"' >> preset.h
-            echo '#define PRESET_KP_VERSION "0.11.0"' >> preset.h
-            echo '#endif' >> preset.h
-          fi
+          # ম্যানুয়ালি preset.h তৈরি করা হচ্ছে (EXTRA_ALIGN সহ)
+          cat << 'EOF' > preset.h
+          #ifndef PRESET_H
+          #define PRESET_H
+          #define PRESET_VERSION "0.0.0"
+          #define PRESET_KP_VERSION "0.11.0"
+          #define EXTRA_ALIGN 8
+          #endif
+          EOF
           
           # এখন tools ফোল্ডার বিল্ড করা হচ্ছে
           make
