@@ -7,34 +7,38 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-      
-      - name: Setup Android NDK
-        uses: nttld/setup-ndk@v1
-        id: setup-ndk
-        with:
-          ndk-version: r25c
-          
-      - name: Clone KernelPatch
+
+      - name: Install Cross-Compiler Dependencies
         run: |
-          git clone https://github.com/bmax121/KernelPatch.git
-          
-      - name: Compile KPM
+          sudo apt-get update
+          sudo apt-get install -y build-essential gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
+
+      - name: Clone KernelPatch Framework
         run: |
-          export NDK=${{ steps.setup-ndk.outputs.ndk-path }}
-          export TOOLCHAIN=$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin
-          export CC=$TOOLCHAIN/aarch64-linux-android31-clang
-          
-          # kpatch.h ফাইলটি খোঁজার জন্য ইনক্লুড পাথ
-          INCLUDE_PATH="-I./KernelPatch/kernel/include -I./KernelPatch/kernel/patch/include"
-          
-          # সরাসরি clang দিয়ে কম্পাইল করা হচ্ছে (Makefile ছাড়া)
-          $CC -c -O2 -fno-pic -fno-PIE -fno-stack-protector -fno-asynchronous-unwind-tables -fno-unwind-tables -fno-exceptions -nostdinc -I$NDK/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include $INCLUDE_PATH -o my-kpm.o my-kpm.c
-          
-          # অবজেক্ট ফাইল থেকে কে.পি.এম (KPM) ফাইল তৈরি করা হচ্ছে
-          $TOOLCHAIN/llvm-objcopy -O binary my-kpm.o my-kpm.kpm
-          
-      - name: Upload Artifact
+          git clone --depth=1 https://github.com/bmax121/KernelPatch.git
+
+      - name: Build kptools Utility
+        run: |
+          # preset.h ফাইলটি tools ডিরেক্টরিতে কপি করা হচ্ছে
+          cp KernelPatch/kernel/include/preset.h KernelPatch/tools/preset.h
+          cd KernelPatch/tools
+          make
+
+      - name: Compile KPM Module
+        run: |
+          # আপনার ফাইলটিকে ডেমো টেমপ্লেটের নামে কপি করা হচ্ছে
+          cp my-kpm.c KernelPatch/kpms/demo-hello/hello.c
+          cd KernelPatch/kpms/demo-hello
+
+          # TARGET_COMPILE সেট করে বিল্ড করা হচ্ছে
+          export TARGET_COMPILE=aarch64-linux-gnu-
+          make
+
+          # আউটপুট ফাইলটি চেক করা (সাধারণত hello.kpm তৈরি হয়)
+          ls -la *.kpm
+
+      - name: Upload KPM Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Compiled-KPM
-          path: my-kpm.kpm
+          path: KernelPatch/kpms/demo-hello/hello.kpm
