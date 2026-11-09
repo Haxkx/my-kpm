@@ -19,8 +19,8 @@ jobs:
           
       - name: Compile KPM
         run: |
-          # আপনার ফাইলটি কপি করা হচ্ছে
-          cp my_kpm.c KernelPatch/kpms/demo-hello/hello.c
+          # এখানে আপনার ফাইলের সঠিক নামটি দিলাম (my-kpm.c)
+          cp my-kpm.c KernelPatch/kpms/demo-hello/hello.c
           
           # কম্পাইল করা হচ্ছে
           cd KernelPatch/kpms/demo-hello
