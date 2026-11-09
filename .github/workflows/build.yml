@@ -11,7 +11,7 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake
+          sudo apt-get install -y build-essential cmake python3
           
       - name: Clone KernelPatch
         run: |
@@ -20,13 +20,25 @@ jobs:
       - name: Build kptools
         run: |
           cd KernelPatch/tools
-          # kptools বিল্ড করার জন্য যা যা দরকার
+          
+          # preset.h তৈরি করার স্ক্রিপ্ট রান করা হচ্ছে
+          python3 gen_headers.py || true 
+          
+          # যদি স্ক্রিপ্ট না থাকে, তবে ম্যানুয়ালি preset.h তৈরি করা হচ্ছে
+          if [ ! -f preset.h ]; then
+            echo '#ifndef PRESET_H' > preset.h
+            echo '#define PRESET_H' >> preset.h
+            echo '#define PRESET_VERSION "0.0.0"' >> preset.h
+            echo '#define PRESET_KP_VERSION "0.11.0"' >> preset.h
+            echo '#endif' >> preset.h
+          fi
+          
+          # এখন tools ফোল্ডার বিল্ড করা হচ্ছে
           make
           
       - name: Compile KPM with kptools
         run: |
           # kptools ব্যবহার করে আপনার ফাইল কম্পাইল করা হচ্ছে
-          # APatch-এর অফিসিয়াল ডকুমেন্টেশন অনুযায়ী কমান্ড
           ./KernelPatch/tools/kptools kpm -i my-kpm.c -o my-kpm.kpm
           
       - name: Upload Artifact
