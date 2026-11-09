@@ -11,40 +11,26 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu build-essential bc bison flex libssl-dev
+          sudo apt-get install -y build-essential cmake
           
       - name: Clone KernelPatch
         run: |
           git clone https://github.com/bmax121/KernelPatch.git
           
-      - name: Download Linux Kernel Headers
+      - name: Build kptools
         run: |
-          # কার্নেল হেডার ডাউনলোড করা হচ্ছে (এটি ছাড়া module.h পাওয়া যাবে না)
-          git clone --depth=1 https://github.com/torvalds/linux.git linux-headers
+          cd KernelPatch/tools
+          # kptools বিল্ড করার জন্য যা যা দরকার
+          make
           
-      - name: Compile KPM
+      - name: Compile KPM with kptools
         run: |
-          # আপনার ফাইলটি কপি করা হচ্ছে (নিশ্চিত করুন আপনার ফাইলের নাম my-kpm.c)
-          cp my-kpm.c KernelPatch/kpms/demo-hello/hello.c
-          
-          cd KernelPatch/kpms/demo-hello
-          
-          # ম্যানুয়ালি কম্পাইল করা হচ্ছে, কার্নেল হেডারের পাথ বলে দেওয়া হচ্ছে
-          aarch64-linux-gnu-gcc -c -O2 -nostdinc \
-          -fno-pic -fno-PIE -fno-stack-protector \
-          -fno-asynchronous-unwind-tables -fno-unwind-tables -fno-exceptions \
-          -I../../../linux-headers/arch/arm64/include \
-          -I../../../linux-headers/arch/arm64/include/generated \
-          -I../../../linux-headers/include \
-          -I../../../linux-headers/arch/arm64/include/uapi \
-          -I../../../linux-headers/include/uapi \
-          -I../../../KernelPatch/kernel/include \
-          -I../../../KernelPatch/kernel/patch/include \
-          -T hello.lds \
-          -o hello.kpm hello.c
+          # kptools ব্যবহার করে আপনার ফাইল কম্পাইল করা হচ্ছে
+          # APatch-এর অফিসিয়াল ডকুমেন্টেশন অনুযায়ী কমান্ড
+          ./KernelPatch/tools/kptools kpm -i my-kpm.c -o my-kpm.kpm
           
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Compiled-KPM
-          path: KernelPatch/kpms/demo-hello/hello.kpm
+          path: my-kpm.kpm
